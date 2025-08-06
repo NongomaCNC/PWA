@@ -1,0 +1,1 @@
+Enables offline functionality through caching
