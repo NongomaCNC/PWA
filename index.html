@@ -1,1 +1,345 @@
-This will contain the HTML content
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkFlow PWA</title>
+    <!-- Web App Manifest for PWA Installation -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22WorkFlow%20Task%20Manager%22%2C%22short_name%22%3A%22WorkFlow%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f3f4f6%22%2C%22theme_color%22%3A%22%232563eb%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F906%2F906334.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%23png%22%7D%5D%7D">
+    <meta name="theme-color" content="#2563eb">
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #4b5563;
+            --border: #e5e7eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .install-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            display: none;
+        }
+
+        form {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        input, select {
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+        }
+
+        .submit-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .submit-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            margin: 15px 0 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .task-item {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid #d1d5db;
+        }
+
+        .task-item.priority-high { border-left-color: #ef4444; }
+        .task-item.priority-medium { border-left-color: #f59e0b; }
+        .task-item.priority-low { border-left-color: #10b981; }
+        
+        .task-item.completed {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        .task-details h4 {
+            margin-bottom: 2px;
+        }
+
+        .task-details p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .checkbox-btn {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>WorkFlow Tasks</h1>
+        <button id="installBtn" class="install-btn">Install App</button>
+    </header>
+
+    <!-- Task Input Form -->
+    <form id="taskForm">
+        <div class="form-group">
+            <label for="taskTitle">Task / Responsibility</label>
+            <input type="text" id="taskTitle" placeholder="e.g., Run daily data audit" required>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group">
+                <label for="taskTime">Time Block (Optional)</label>
+                <input type="time" id="taskTime">
+            </div>
+            <div class="form-group">
+                <label for="taskPriority">Priority Tier</label>
+                <select id="taskPriority">
+                    <option value="low">Low Priority</option>
+                    <option value="medium" selected>Medium Priority</option>
+                    <option value="high">High (Top 3)</option>
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="submit-btn">Add to Strategy</button>
+    </form>
+
+    <!-- Task List Sections -->
+    <h3 class="section-title">Today's Focus</h3>
+    <ul id="taskList" class="task-list"></ul>
+</div>
+
+<script>
+    // System Core Elements
+    const taskForm = document.getElementById('taskForm');
+    const taskList = document.getElementById('taskList');
+    const installBtn = document.getElementById('installBtn');
+
+    // Storage Management
+    let tasks = JSON.parse(localStorage.getItem('workflow_tasks')) || [];
+
+    function saveTasks() {
+        localStorage.setItem('workflow_tasks', JSON.stringify(tasks));
+        renderTasks();
+    }
+
+    // Task Processing Engine
+    taskForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const newTask = {
+            id: Date.now(),
+            title: document.getElementById('taskTitle').value,
+            time: document.getElementById('taskTime').value,
+            priority: document.getElementById('taskPriority').value,
+            completed: false
+        };
+
+        tasks.push(newTask);
+        saveTasks();
+        taskForm.reset();
+        
+        // Request notification permission for future alerts if supported
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    });
+
+    function toggleTask(id) {
+        tasks = tasks.map(task => task.id === id ? { ...task, completed: !task.completed } : task);
+        saveTasks();
+    }
+
+    function deleteTask(id) {
+        tasks = tasks.filter(task => task.id !== id);
+        saveTasks();
+    }
+
+    // UI Rendering Logic
+    function renderTasks() {
+        taskList.innerHTML = '';
+        
+        // Sort tasks: high priority first, completed items pushed to the bottom
+        const sortedTasks = [...tasks].sort((a, b) => {
+            if (a.completed !== b.completed) return a.completed - b.completed;
+            const priorityWeight = { high: 3, medium: 2, low: 1 };
+            return priorityWeight[b.priority] - priorityWeight[a.priority];
+        });
+
+        if (sortedTasks.length === 0) {
+            taskList.innerHTML = `<li style="text-align:center; color:var(--text-muted); padding:20px;">No tasks captured. Setup your morning list!</li>`;
+            return;
+        }
+
+        sortedTasks.forEach(task => {
+            const li = document.createElement('li');
+            li.className = `task-item priority-${task.priority} ${task.completed ? 'completed' : ''}`;
+            
+            li.innerHTML = `
+                <div class="task-details">
+                    <h4>${escapeHTML(task.title)}</h4>
+                    <p>${task.time ? `⏰ Scheduled: ${task.time}` : '📥 Backlog / Flexible'}</p>
+                </div>
+                <div class="task-actions">
+                    <input type="checkbox" class="checkbox-btn" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
+                    <button class="delete-btn" onclick="deleteTask(${task.id})" title="Delete Task">🗑️</button>
+                </div>
+            `;
+            taskList.appendChild(li);
+        });
+    }
+
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
+
+    // PWA Installation Context Handler
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.style.display = 'block';
+    });
+
+    installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            installBtn.style.display = 'none';
+        }
+        deferredPrompt = null;
+    });
+
+    // Native Inline Service Worker for Offline Execution Architecture
+    if ('serviceWorker' in navigator) {
+        const swBlob = new Blob([`
+            const CACHE_NAME = 'workflow-v1';
+            self.addEventListener('install', e => self.skipWaiting());
+            self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+            self.addEventListener('fetch', e => {
+                // Network first falling back to offline asset simulation
+                e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+            });
+        `], { type: 'application/javascript' });
+        
+        const swUrl = URL.createObjectURL(swBlob);
+        navigator.serviceWorker.register(swUrl).catch(err => console.log('SW Setup Ignored locally:', err));
+    }
+
+    // Initial Execution
+    renderTasks();
+</script>
+</body>
+</html>
