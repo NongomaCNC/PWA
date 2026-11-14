@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0f172a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="description" content="FlexiTime — SA time capture with regular/overtime/travel tracking, public holiday awareness, and CSV export." />
+  <meta name="description" content="FlexiTime — SA time capture with manual logging, edit support, overtime/travel tracking, and CSV export." />
   <title>FlexiTime — SA Time Capture</title>
   <link rel="manifest" id="manifest-link" />
   <link rel="apple-touch-icon" id="apple-icon" />
@@ -20,9 +20,7 @@
       --muted: #94a3b8;
       --accent: #0ea5e9;
       --work: #10b981;
-      --work-dark: #064e3b;
       --travel: #f59e0b;
-      --travel-dark: #451a03;
       --danger: #ef4444;
       --radius: 14px;
     }
@@ -73,19 +71,21 @@
       padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border);
     }
 
-    .note-box { margin-top: 14px; }
-    .note-input {
+    .controls-grid { display: grid; gap: 12px; margin-top: 14px; }
+    .input-group { display: flex; flex-direction: column; gap: 4px; }
+    .input-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+    .input-field {
       width: 100%; background: var(--panel); border: 1px solid var(--border);
       color: var(--text); border-radius: 12px; padding: 12px 14px;
       font-size: 14px; outline: none; transition: border-color .15s;
     }
-    .note-input:focus { border-color: var(--accent); }
-    .note-input::placeholder { color: #64748b; }
+    .input-field:focus { border-color: var(--accent); }
+    .input-field::placeholder { color: #64748b; }
 
     .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
     .btn {
-      border: none; border-radius: var(--radius); padding: 16px;
-      font-size: 16px; font-weight: 700; color: #fff; cursor: pointer;
+      border: none; border-radius: var(--radius); padding: 15px;
+      font-size: 15px; font-weight: 700; color: #fff; cursor: pointer;
       transition: transform .1s ease, opacity .2s, filter .15s;
       display: flex; align-items: center; justify-content: center; gap: 8px;
     }
@@ -94,10 +94,15 @@
     .btn-work { background: var(--work); color: #022c22; }
     .btn-travel { background: var(--travel); color: #271500; }
     .btn-stop { background: var(--danger); width: 100%; margin-top: 12px; color: #fff; }
+    .btn-secondary {
+      background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer;
+      width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
     .btn-sm {
       background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
-      border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600;
-      cursor: pointer;
+      border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
     }
     .btn-sm:hover { border-color: var(--accent); }
 
@@ -186,23 +191,40 @@
       font-size: 12px; color: #cbd5e1; margin-top: 4px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .entry-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .entry-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     .entry-badge {
       font-size: 10px; font-weight: 700; padding: 3px 8px;
       border-radius: 999px; background: #334155; text-transform: uppercase;
     }
     .entry-badge.ot { background: #78350f; color: #fde68a; }
     .entry-badge.run { background: #065f46; color: #a7f3d0; }
-    .btn-del {
-      background: transparent; border: none; color: #64748b;
-      font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: 6px;
+    .action-icon-btn {
+      background: transparent; border: none; color: #94a3b8;
+      font-size: 14px; cursor: pointer; padding: 6px; border-radius: 6px;
+      display: grid; place-items: center;
     }
-    .btn-del:hover { color: var(--danger); background: rgba(239, 68, 68, 0.12); }
+    .action-icon-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+    .action-icon-btn.btn-del:hover { color: var(--danger); background: rgba(239, 68, 68, 0.12); }
+
+    /* Modal / Dialog Overlay */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(4px); z-index: 50; display: grid; place-items: center;
+      padding: 16px; opacity: 0; pointer-events: none; transition: opacity .2s ease;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .modal-card {
+      background: var(--panel); border: 1px solid var(--border);
+      width: 100%; max-width: 440px; border-radius: var(--radius);
+      padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .modal-title { font-size: 16px; font-weight: 700; margin: 0 0 16px; }
+    .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
 
     .empty-state { color: var(--muted); font-size: 13px; text-align: center; padding: 16px 0; }
     footer { text-align: center; padding: 20px 16px 8px; color: var(--muted); font-size: 12px; }
     .hidden { display: none !important; }
-    @media (display-mode: standalone) { .app-header { padding-top: max(14px, env(safe-area-inset-top)); } }
+    @media (display-mode: standalone) { .app-header { padding-top: max(14px, env(safe-area-inset-bottom)); } }
   </style>
 </head>
 <body>
@@ -224,21 +246,27 @@
       <div class="shift-hint" id="shift-hint">Regular hours: Mon–Fri 07:30–16:00 SAST</div>
     </section>
 
-    <div class="note-box">
-      <input
-        type="text"
-        id="entry-note-input"
-        class="note-input"
-        maxlength="120"
-        placeholder="Optional note / Work Order / Site (e.g. Feeder Patrol)"
-        aria-label="Session note"
-      />
+    <div class="controls-grid">
+      <div class="input-group">
+        <label class="input-label" for="entry-note-input">Task / Job / Work Order Reference</label>
+        <input
+          type="text"
+          id="entry-note-input"
+          class="input-field"
+          maxlength="120"
+          placeholder="e.g. Feeder Line Patrol / Transformer Check"
+        />
+      </div>
     </div>
 
     <section class="actions">
       <button class="btn btn-work" id="btn-work">▶ Start Work</button>
       <button class="btn btn-travel" id="btn-travel">🚗 Start Travel</button>
     </section>
+
+    <div style="margin-top: 10px;">
+      <button class="btn-secondary" id="btn-open-manual">➕ Add Manual Past Entry</button>
+    </div>
 
     <section class="running-card hidden" id="running-card" aria-live="polite">
       <div class="running-badge">
@@ -279,6 +307,40 @@
     </section>
   </main>
 
+  <!-- MANUAL / EDIT ENTRY MODAL -->
+  <div class="modal-overlay" id="entry-modal">
+    <div class="modal-card">
+      <h3 class="modal-title" id="modal-heading">Add Past Time Entry</h3>
+      <form id="entry-form" onsubmit="return false;">
+        <div class="controls-grid" style="gap: 10px;">
+          <div class="input-group">
+            <label class="input-label" for="m-type">Entry Type</label>
+            <select id="m-type" class="input-field">
+              <option value="WORK">Work Shift</option>
+              <option value="TRAVEL">Travel (max 30m)</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="m-start">Start Date & Time (SAST)</label>
+            <input type="datetime-local" id="m-start" class="input-field" required />
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="m-end">End Date & Time (SAST)</label>
+            <input type="datetime-local" id="m-end" class="input-field" required />
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="m-note">Note / Work Order</label>
+            <input type="text" id="m-note" class="input-field" maxlength="120" placeholder="Optional notes" />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-work" id="modal-save" style="padding: 12px; font-size: 14px;">Save Entry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <footer>
     <small>SAST (UTC+2) · Offline-first · Stored locally on this device</small>
   </footer>
@@ -288,23 +350,23 @@
     'use strict';
 
     /* =====================================================================
-       CONSTANTS
+       CONSTANTS & PARAMS
        ===================================================================== */
-    const SAST_OFFSET_MIN = 120;                 // UTC+2 (South Africa Standard Time)
-    const TRAVEL_MAX_MS = 30 * 60 * 1000;        // 30 minutes max per travel leg
+    const SAST_OFFSET_MIN = 120;
+    const TRAVEL_MAX_MS = 30 * 60 * 1000;
     const TRAVEL_MAX_MIN = 30;
-    const BREAK_THRESHOLD_MIN = 5 * 60;          // 5 hours continuous work threshold
-    const BREAK_DURATION_MIN = 30;               // 30 minutes unpaid break deduction
-    const CONTINUITY_GAP_MIN = 30;               // gaps < 30 min treated as continuous shift
-    const REG_START_MIN = 7 * 60 + 30;           // 07:30
-    const REG_END_MIN = 16 * 60;                 // 16:00
+    const BREAK_THRESHOLD_MIN = 5 * 60;
+    const BREAK_DURATION_MIN = 30;
+    const CONTINUITY_GAP_MIN = 30;
+    const REG_START_MIN = 7 * 60 + 30;
+    const REG_END_MIN = 16 * 60;
 
     const DB_NAME = 'flexitime';
     const DB_VERSION = 1;
     const STORE = 'entries';
 
     /* =====================================================================
-       SA PUBLIC HOLIDAYS (Public Holidays Act 36 of 1994)
+       SA PUBLIC HOLIDAYS
        ===================================================================== */
     const FIXED_HOLIDAYS = [
       { month: 1,  day: 1,  name: "New Year's Day" },
@@ -344,7 +406,6 @@
       map.set(ymd(gf.getUTCFullYear(), gf.getUTCMonth() + 1, gf.getUTCDate()), 'Good Friday');
       map.set(ymd(fd.getUTCFullYear(), fd.getUTCMonth() + 1, fd.getUTCDate()), 'Family Day');
 
-      // Sunday-substitution rule: if a public holiday falls on Sunday, Monday is a public holiday
       const extra = new Map();
       for (const [key, name] of map) {
         const [y, m, d] = key.split('-').map(Number);
@@ -372,7 +433,7 @@
     }
 
     /* =====================================================================
-       SAST HELPERS
+       SAST TIME & DATE UTILS
        ===================================================================== */
     function toSAST(date) {
       const sast = new Date(date.getTime() + SAST_OFFSET_MIN * 60000);
@@ -389,6 +450,17 @@
       return new Date(Date.UTC(y, m - 1, d) - SAST_OFFSET_MIN * 60000);
     }
 
+    function toLocalDateTimeLocalStr(date) {
+      // Format Date object to YYYY-MM-DDTHH:mm in SAST for datetime-local input
+      const sast = new Date(date.getTime() + SAST_OFFSET_MIN * 60000);
+      return sast.toISOString().slice(0, 16);
+    }
+
+    function fromLocalDateTimeLocalStr(localStr) {
+      // Parse YYYY-MM-DDTHH:mm as SAST UTC time
+      return new Date(new Date(localStr + 'Z').getTime() - SAST_OFFSET_MIN * 60000);
+    }
+
     const diffMinutes = (a, b) => Math.max(0, Math.round((b.getTime() - a.getTime()) / 60000));
     const minD = (a, b) => (a < b ? a : b);
     const maxD = (a, b) => (a > b ? a : b);
@@ -400,7 +472,7 @@
     }
 
     /* =====================================================================
-       CLASSIFICATION: split [start, end] into REGULAR / OVERTIME segments
+       CLASSIFICATION & BREAKS
        ===================================================================== */
     function classifyInterval(start, end) {
       const segments = [];
@@ -452,9 +524,6 @@
       return merged;
     }
 
-    /* =====================================================================
-       BREAK RULE: 30 min deducted for every 5 h worked; gaps < 30 min = continuous
-       ===================================================================== */
     function computeBreakDeduction(intervals) {
       const sorted = intervals
         .filter((x) => x.end > x.start)
@@ -558,7 +627,7 @@
     }
 
     /* =====================================================================
-       UI STATE & ELEMENTS
+       UI ELEMENTS & STATE
        ===================================================================== */
     const els = {
       clock: document.getElementById('live-clock'),
@@ -567,6 +636,7 @@
       noteInput: document.getElementById('entry-note-input'),
       btnWork: document.getElementById('btn-work'),
       btnTravel: document.getElementById('btn-travel'),
+      btnOpenManual: document.getElementById('btn-open-manual'),
       runningCard: document.getElementById('running-card'),
       runningType: document.getElementById('running-type'),
       runningTimer: document.getElementById('running-timer'),
@@ -585,11 +655,22 @@
       netStatus: document.getElementById('net-status'),
       tabToday: document.getElementById('tab-today'),
       tabAll: document.getElementById('tab-all'),
+      // Modal
+      modal: document.getElementById('entry-modal'),
+      modalHeading: document.getElementById('modal-heading'),
+      entryForm: document.getElementById('entry-form'),
+      mType: document.getElementById('m-type'),
+      mStart: document.getElementById('m-start'),
+      mEnd: document.getElementById('m-end'),
+      mNote: document.getElementById('m-note'),
+      modalCancel: document.getElementById('modal-cancel'),
+      modalSave: document.getElementById('modal-save'),
     };
 
     let running = null;
     let tickHandle = null;
     let currentFilter = 'today';
+    let editingEntryId = null; // null if adding new manual entry, string ID if editing
 
     /* =====================================================================
        LIVE CLOCK & HOLIDAY STATUS
@@ -653,7 +734,7 @@
     }
 
     /* =====================================================================
-       START / STOP / NOTE SYNC
+       LIVE SESSIONS (START / STOP)
        ===================================================================== */
     async function start(type) {
       if (running) return;
@@ -681,7 +762,6 @@
         const cap = new Date(running.startTime).getTime() + TRAVEL_MAX_MS;
         if (end.getTime() > cap) end = new Date(cap);
       }
-      // Capture any note typed while session was running
       const latestNote = els.noteInput.value.trim();
       if (latestNote) running.note = latestNote;
 
@@ -694,6 +774,73 @@
       stopTicker();
       renderRunning();
       updateButtons();
+      await renderAll();
+    }
+
+    /* =====================================================================
+       MODAL MANAGEMENT (Manual Add / Edit)
+       ===================================================================== */
+    function openModal(entryToEdit = null) {
+      editingEntryId = entryToEdit ? entryToEdit.id : null;
+      els.modalHeading.textContent = entryToEdit ? 'Edit Time Entry' : 'Add Past Time Entry';
+      els.modalSave.textContent = entryToEdit ? 'Update Entry' : 'Save Entry';
+
+      if (entryToEdit) {
+        els.mType.value = entryToEdit.type;
+        els.mStart.value = toLocalDateTimeLocalStr(new Date(entryToEdit.startTime));
+        els.mEnd.value = entryToEdit.endTime ? toLocalDateTimeLocalStr(new Date(entryToEdit.endTime)) : toLocalDateTimeLocalStr(new Date());
+        els.mNote.value = entryToEdit.note || '';
+      } else {
+        els.mType.value = 'WORK';
+        const now = new Date();
+        const oneHourAgo = new Date(now.getTime() - 3600000);
+        els.mStart.value = toLocalDateTimeLocalStr(oneHourAgo);
+        els.mEnd.value = toLocalDateTimeLocalStr(now);
+        els.mNote.value = els.noteInput.value.trim();
+      }
+
+      els.modal.classList.add('open');
+    }
+
+    function closeModal() {
+      els.modal.classList.remove('open');
+      editingEntryId = null;
+    }
+
+    async function handleModalSubmit(e) {
+      e.preventDefault();
+      const type = els.mType.value;
+      const startD = fromLocalDateTimeLocalStr(els.mStart.value);
+      const endD = fromLocalDateTimeLocalStr(els.mEnd.value);
+      const note = els.mNote.value.trim();
+
+      if (endD <= startD) {
+        alert('End time must be later than start time.');
+        return;
+      }
+
+      let status = 'STOPPED';
+      let finalEnd = endD;
+
+      if (type === 'TRAVEL') {
+        const maxAllowed = new Date(startD.getTime() + TRAVEL_MAX_MS);
+        if (finalEnd > maxAllowed) {
+          finalEnd = maxAllowed;
+          status = 'AUTO_STOPPED';
+        }
+      }
+
+      const entry = {
+        id: editingEntryId || uuid(),
+        type,
+        note,
+        startTime: startD.toISOString(),
+        endTime: finalEnd.toISOString(),
+        status,
+      };
+
+      await putEntry(entry);
+      closeModal();
       await renderAll();
     }
 
@@ -743,7 +890,6 @@
           const totalTravelMin = Math.min(TRAVEL_MAX_MIN, diffMinutes(startD, endD));
           display.push({ entry: e, segments: [], travelMinutes: totalTravelMin });
 
-          // Clip travel strictly to today's SAST window
           const todayClip = clipToRange(startD, endD, todayStart, tomorrowStart);
           if (todayClip) {
             travel += Math.min(TRAVEL_MAX_MIN, diffMinutes(todayClip[0], todayClip[1]));
@@ -751,11 +897,9 @@
           continue;
         }
 
-        // Full entry segments for list display
         const fullSegs = classifyInterval(startD, endD);
         display.push({ entry: e, segments: fullSegs, travelMinutes: 0 });
 
-        // Clip work interval strictly to today's SAST window for accurate daily summary
         const todayClip = clipToRange(startD, endD, todayStart, tomorrowStart);
         if (todayClip) {
           const todaySegs = classifyInterval(todayClip[0], todayClip[1]);
@@ -795,7 +939,7 @@
         const li = document.createElement('li');
         li.className = 'empty-state';
         li.textContent = currentFilter === 'today'
-          ? 'No entries logged today. Press Start Work or Start Travel.'
+          ? 'No entries logged today. Press Start Work, Start Travel, or add a manual entry.'
           : 'No time logs recorded yet.';
         els.entriesList.appendChild(li);
         return;
@@ -811,7 +955,7 @@
 
         const startD = new Date(entry.startTime);
         const endD = entry.endTime ? new Date(entry.endTime) : null;
-        const datePrefix = currentFilter === 'all' ? `${toSAST(startD).dateStr} · ` : '';
+        const datePrefix = `${toSAST(startD).dateStr} · `;
 
         const body = document.createElement('div');
         body.className = 'entry-body';
@@ -823,7 +967,7 @@
         const sub = document.createElement('div');
         sub.className = 'entry-sub';
         if (isTravel) {
-          sub.textContent = `${fmtHM(travelMinutes)}${entry.status === 'AUTO_STOPPED' ? ' · auto-stopped at 30m cap' : ''}`;
+          sub.textContent = `${fmtHM(travelMinutes)}${entry.status === 'AUTO_STOPPED' ? ' · capped at 30m' : ''}`;
         } else {
           const reg = segments.filter((s) => s.kind === 'REGULAR').reduce((a, s) => a + s.minutes, 0);
           const ot  = segments.filter((s) => s.kind === 'OVERTIME').reduce((a, s) => a + s.minutes, 0);
@@ -856,15 +1000,26 @@
         } else {
           badge.textContent = 'WORK';
         }
-
         right.appendChild(badge);
 
+        // Edit button (for stopped entries)
+        if (entry.status !== 'RUNNING') {
+          const editBtn = document.createElement('button');
+          editBtn.className = 'action-icon-btn';
+          editBtn.title = 'Edit entry';
+          editBtn.setAttribute('aria-label', 'Edit entry');
+          editBtn.innerHTML = '✏️';
+          editBtn.addEventListener('click', () => openModal(entry));
+          right.appendChild(editBtn);
+        }
+
+        // Delete button
         if (entry.status !== 'RUNNING') {
           const delBtn = document.createElement('button');
-          delBtn.className = 'btn-del';
+          delBtn.className = 'action-icon-btn btn-del';
           delBtn.title = 'Delete entry';
           delBtn.setAttribute('aria-label', 'Delete entry');
-          delBtn.textContent = '✕';
+          delBtn.innerHTML = '✕';
           delBtn.addEventListener('click', async () => {
             if (confirm('Delete this time entry?')) {
               await deleteEntry(entry.id);
@@ -931,7 +1086,7 @@
     }
 
     /* =====================================================================
-       ONLINE / OFFLINE & PWA MANIFEST
+       ONLINE / OFFLINE STATUS
        ===================================================================== */
     function setOnline(isOnline) {
       els.netStatus.textContent = isOnline ? 'Online' : 'Offline';
@@ -991,6 +1146,11 @@
       els.btnStop.addEventListener('click', () => stopRunning(false));
       els.btnExport.addEventListener('click', exportCSV);
 
+      els.btnOpenManual.addEventListener('click', () => openModal(null));
+      els.modalCancel.addEventListener('click', closeModal);
+      els.modal.addEventListener('click', (e) => { if (e.target === els.modal) closeModal(); });
+      els.entryForm.addEventListener('submit', handleModalSubmit);
+
       [els.tabToday, els.tabAll].forEach((btn) => {
         btn.addEventListener('click', () => {
           currentFilter = btn.dataset.filter;
@@ -1004,7 +1164,6 @@
       window.addEventListener('offline', () => setOnline(false));
       setOnline(navigator.onLine);
 
-      // Restore active session cleanly before first render
       const all = await getAllEntries();
       const active = all.find((e) => e.status === 'RUNNING');
       if (active) {
@@ -1024,16 +1183,9 @@
           startTicker();
           updateButtons();
         }
-      } else {
-        // Support manifest shortcut query parameters if idle
-        const action = new URLSearchParams(location.search).get('action');
-        if (action === 'start-work') await start('WORK');
-        if (action === 'start-travel') await start('TRAVEL');
       }
 
       await renderAll();
-
-      // Re-calculate summaries every 30s so running shifts update live totals
       setInterval(renderAll, 30 * 1000);
     }
 
