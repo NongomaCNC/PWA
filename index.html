@@ -1,345 +1,1048 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en-ZA">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WorkFlow PWA</title>
-    <!-- Web App Manifest for PWA Installation -->
-    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22WorkFlow%20Task%20Manager%22%2C%22short_name%22%3A%22WorkFlow%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f3f4f6%22%2C%22theme_color%22%3A%22%232563eb%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F906%2F906334.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%23png%22%7D%5D%7D">
-    <meta name="theme-color" content="#2563eb">
-    
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg: #f3f4f6;
-            --card-bg: #ffffff;
-            --text-main: #1f2937;
-            --text-muted: #4b5563;
-            --border: #e5e7eb;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="FlexiTime — SA time capture with regular/overtime/travel tracking, public holiday awareness, and CSV export." />
+  <title>FlexiTime — SA Time Capture</title>
+  <link rel="manifest" id="manifest-link" />
+  <link rel="apple-touch-icon" id="apple-icon" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-2: #273449;
+      --border: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #0ea5e9;
+      --work: #10b981;
+      --work-dark: #064e3b;
+      --travel: #f59e0b;
+      --travel-dark: #451a03;
+      --danger: #ef4444;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
+      line-height: 1.4;
+    }
+    .app-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px; position: sticky; top: 0; z-index: 20;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    .brand { display: flex; gap: 10px; align-items: center; }
+    .logo {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      display: grid; place-items: center; font-size: 20px;
+    }
+    h1 { font-size: 18px; margin: 0; letter-spacing: -0.3px; }
+    .holiday-banner {
+      margin: 2px 0 0; font-size: 11px; color: #fbbf24;
+      font-weight: 600; display: flex; align-items: center; gap: 4px;
+    }
+    .status-pill {
+      font-size: 11px; font-weight: 600; padding: 4px 10px;
+      border-radius: 999px; background: #14532d; color: #bbf7d0;
+      border: 1px solid #166534;
+    }
+    .status-pill.offline { background: #7f1d1d; color: #fecaca; border-color: #991b1b; }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
+    main { padding: 0 16px; max-width: 640px; margin: 0 auto; }
 
-        body {
-            background-color: var(--bg);
-            color: var(--text-main);
-            padding: 15px;
-            display: flex;
-            justify-content: center;
-        }
+    .clock-card { text-align: center; padding: 20px 0 12px; }
+    .clock {
+      font-size: 46px; font-weight: 800;
+      font-variant-numeric: tabular-nums; letter-spacing: 1px;
+    }
+    .date { color: var(--muted); font-size: 14px; margin-top: 2px; }
+    .shift-hint {
+      display: inline-block; margin-top: 8px; font-size: 11px;
+      color: var(--muted); background: var(--panel);
+      padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border);
+    }
 
-        .container {
-            width: 100%;
-            max-width: 600px;
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
+    .note-box { margin-top: 14px; }
+    .note-input {
+      width: 100%; background: var(--panel); border: 1px solid var(--border);
+      color: var(--text); border-radius: 12px; padding: 12px 14px;
+      font-size: 14px; outline: none; transition: border-color .15s;
+    }
+    .note-input:focus { border-color: var(--accent); }
+    .note-input::placeholder { color: #64748b; }
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 10px;
-        }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .btn {
+      border: none; border-radius: var(--radius); padding: 16px;
+      font-size: 16px; font-weight: 700; color: #fff; cursor: pointer;
+      transition: transform .1s ease, opacity .2s, filter .15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn:active:not(:disabled) { transform: scale(.97); }
+    .btn:disabled { opacity: .38; cursor: not-allowed; }
+    .btn-work { background: var(--work); color: #022c22; }
+    .btn-travel { background: var(--travel); color: #271500; }
+    .btn-stop { background: var(--danger); width: 100%; margin-top: 12px; color: #fff; }
+    .btn-sm {
+      background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-sm:hover { border-color: var(--accent); }
 
-        h1 {
-            font-size: 1.5rem;
-            color: var(--primary);
-        }
+    .running-card {
+      margin-top: 16px; background: var(--panel); border-radius: var(--radius);
+      padding: 20px; text-align: center; border: 2px solid var(--accent);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+    .running-card.is-work { border-color: var(--work); }
+    .running-card.is-travel { border-color: var(--travel); }
+    .running-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted);
+    }
+    .pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--work);
+      animation: pulse 1.4s infinite;
+    }
+    .running-card.is-travel .pulse-dot { background: var(--travel); }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.8); }
+    }
+    .running-timer {
+      font-size: 42px; font-weight: 800;
+      font-variant-numeric: tabular-nums; margin: 8px 0 4px;
+    }
+    .running-note { font-size: 13px; color: var(--muted); min-height: 18px; }
+    .progress-wrap {
+      height: 6px; background: var(--panel-2); border-radius: 999px;
+      overflow: hidden; margin-top: 12px;
+    }
+    .progress-bar { height: 100%; background: var(--travel); width: 0%; transition: width .25s linear; }
 
-        .install-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            display: none;
-        }
+    .card {
+      margin-top: 18px; background: var(--panel); border-radius: var(--radius);
+      padding: 18px; border: 1px solid var(--border);
+    }
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 14px; gap: 8px;
+    }
+    h2 {
+      margin: 0; font-size: 13px; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted);
+    }
+    .summary-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 0;
+    }
+    @media (min-width: 480px) {
+      .summary-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .summary-grid > div {
+      background: var(--panel-2); border-radius: 10px; padding: 12px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .summary-grid dt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .summary-grid dd {
+      margin: 4px 0 0; font-size: 18px; font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .summary-grid .highlight { background: #0c4a6e; border-color: #0284c7; }
+    .summary-grid .ot-box dd { color: #fbbf24; }
 
-        form {
-            display: grid;
-            gap: 10px;
-            margin-bottom: 20px;
-            background: #fafafa;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
+    .filter-tabs { display: flex; gap: 6px; }
+    .tab-btn {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .tab-btn.active { background: var(--accent); color: #082f49; border-color: var(--accent); }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
+    .entries-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+    .entry {
+      background: var(--panel-2); border-radius: 10px; padding: 12px;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      border-left: 4px solid var(--accent);
+    }
+    .entry.work { border-left-color: var(--work); }
+    .entry.travel { border-left-color: var(--travel); }
+    .entry.overtime { background: #2e2510; }
+    .entry-body { min-width: 0; flex: 1; }
+    .entry-main { font-weight: 600; font-size: 14px; }
+    .entry-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .entry-memo {
+      font-size: 12px; color: #cbd5e1; margin-top: 4px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .entry-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .entry-badge {
+      font-size: 10px; font-weight: 700; padding: 3px 8px;
+      border-radius: 999px; background: #334155; text-transform: uppercase;
+    }
+    .entry-badge.ot { background: #78350f; color: #fde68a; }
+    .entry-badge.run { background: #065f46; color: #a7f3d0; }
+    .btn-del {
+      background: transparent; border: none; color: #64748b;
+      font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: 6px;
+    }
+    .btn-del:hover { color: var(--danger); background: rgba(239, 68, 68, 0.12); }
 
-        label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
-
-        input, select {
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 1rem;
-            outline: none;
-        }
-
-        input:focus, select:focus {
-            border-color: var(--primary);
-        }
-
-        .submit-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 5px;
-        }
-
-        .submit-btn:hover {
-            background: var(--primary-hover);
-        }
-
-        .section-title {
-            font-size: 1.1rem;
-            margin: 15px 0 10px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .task-list {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .task-item {
-            background: white;
-            border: 1px solid var(--border);
-            padding: 12px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-left: 5px solid #d1d5db;
-        }
-
-        .task-item.priority-high { border-left-color: #ef4444; }
-        .task-item.priority-medium { border-left-color: #f59e0b; }
-        .task-item.priority-low { border-left-color: #10b981; }
-        
-        .task-item.completed {
-            opacity: 0.5;
-            text-decoration: line-through;
-        }
-
-        .task-details h4 {
-            margin-bottom: 2px;
-        }
-
-        .task-details p {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .task-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .checkbox-btn {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        .delete-btn {
-            background: transparent;
-            border: none;
-            color: #ef4444;
-            cursor: pointer;
-            font-size: 1.1rem;
-        }
-    </style>
+    .empty-state { color: var(--muted); font-size: 13px; text-align: center; padding: 16px 0; }
+    footer { text-align: center; padding: 20px 16px 8px; color: var(--muted); font-size: 12px; }
+    .hidden { display: none !important; }
+    @media (display-mode: standalone) { .app-header { padding-top: max(14px, env(safe-area-inset-top)); } }
+  </style>
 </head>
 <body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">⏱</div>
+      <div>
+        <h1>FlexiTime</h1>
+        <p id="holiday-banner" class="holiday-banner hidden">Public Holiday</p>
+      </div>
+    </div>
+    <div class="status-pill" id="net-status">Online</div>
+  </header>
 
-<div class="container">
-    <header>
-        <h1>WorkFlow Tasks</h1>
-        <button id="installBtn" class="install-btn">Install App</button>
-    </header>
+  <main>
+    <section class="clock-card">
+      <div class="clock" id="live-clock">--:--:--</div>
+      <div class="date" id="live-date">—</div>
+      <div class="shift-hint" id="shift-hint">Regular hours: Mon–Fri 07:30–16:00 SAST</div>
+    </section>
 
-    <!-- Task Input Form -->
-    <form id="taskForm">
-        <div class="form-group">
-            <label for="taskTitle">Task / Responsibility</label>
-            <input type="text" id="taskTitle" placeholder="e.g., Run daily data audit" required>
+    <div class="note-box">
+      <input
+        type="text"
+        id="entry-note-input"
+        class="note-input"
+        maxlength="120"
+        placeholder="Optional note / Work Order / Site (e.g. Feeder Patrol)"
+        aria-label="Session note"
+      />
+    </div>
+
+    <section class="actions">
+      <button class="btn btn-work" id="btn-work">▶ Start Work</button>
+      <button class="btn btn-travel" id="btn-travel">🚗 Start Travel</button>
+    </section>
+
+    <section class="running-card hidden" id="running-card" aria-live="polite">
+      <div class="running-badge">
+        <span class="pulse-dot"></span>
+        <span id="running-type">Work</span>
+      </div>
+      <div class="running-timer" id="running-timer">00:00:00</div>
+      <div class="running-note" id="running-note"></div>
+      <div class="progress-wrap hidden" id="travel-progress-wrap">
+        <div class="progress-bar" id="travel-progress-bar"></div>
+      </div>
+      <button class="btn btn-stop" id="btn-stop">⏹ Stop Session</button>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2>Today's Summary</h2>
+        <button class="btn-sm" id="btn-export" title="Download all logs as CSV">⬇ Export CSV</button>
+      </div>
+      <dl class="summary-grid">
+        <div><dt>Regular</dt><dd id="sum-regular">0h 00m</dd></div>
+        <div class="ot-box"><dt>Overtime</dt><dd id="sum-overtime">0h 00m</dd></div>
+        <div><dt>Travel (capped)</dt><dd id="sum-travel">0h 00m</dd></div>
+        <div><dt>Break Ded.</dt><dd id="sum-breaks">0h 00m</dd></div>
+        <div class="highlight"><dt>Net Worked</dt><dd id="sum-net">0h 00m</dd></div>
+      </dl>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2>Time Logs</h2>
+        <div class="filter-tabs">
+          <button class="tab-btn active" id="tab-today" data-filter="today">Today</button>
+          <button class="tab-btn" id="tab-all" data-filter="all">All</button>
         </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div class="form-group">
-                <label for="taskTime">Time Block (Optional)</label>
-                <input type="time" id="taskTime">
-            </div>
-            <div class="form-group">
-                <label for="taskPriority">Priority Tier</label>
-                <select id="taskPriority">
-                    <option value="low">Low Priority</option>
-                    <option value="medium" selected>Medium Priority</option>
-                    <option value="high">High (Top 3)</option>
-                </select>
-            </div>
-        </div>
-        <button type="submit" class="submit-btn">Add to Strategy</button>
-    </form>
+      </div>
+      <ul id="entries-list" class="entries-list"></ul>
+    </section>
+  </main>
 
-    <!-- Task List Sections -->
-    <h3 class="section-title">Today's Focus</h3>
-    <ul id="taskList" class="task-list"></ul>
-</div>
+  <footer>
+    <small>SAST (UTC+2) · Offline-first · Stored locally on this device</small>
+  </footer>
 
-<script>
-    // System Core Elements
-    const taskForm = document.getElementById('taskForm');
-    const taskList = document.getElementById('taskList');
-    const installBtn = document.getElementById('installBtn');
+  <script>
+  (function () {
+    'use strict';
 
-    // Storage Management
-    let tasks = JSON.parse(localStorage.getItem('workflow_tasks')) || [];
+    /* =====================================================================
+       CONSTANTS
+       ===================================================================== */
+    const SAST_OFFSET_MIN = 120;                 // UTC+2 (South Africa Standard Time)
+    const TRAVEL_MAX_MS = 30 * 60 * 1000;        // 30 minutes max per travel leg
+    const TRAVEL_MAX_MIN = 30;
+    const BREAK_THRESHOLD_MIN = 5 * 60;          // 5 hours continuous work threshold
+    const BREAK_DURATION_MIN = 30;               // 30 minutes unpaid break deduction
+    const CONTINUITY_GAP_MIN = 30;               // gaps < 30 min treated as continuous shift
+    const REG_START_MIN = 7 * 60 + 30;           // 07:30
+    const REG_END_MIN = 16 * 60;                 // 16:00
 
-    function saveTasks() {
-        localStorage.setItem('workflow_tasks', JSON.stringify(tasks));
-        renderTasks();
+    const DB_NAME = 'flexitime';
+    const DB_VERSION = 1;
+    const STORE = 'entries';
+
+    /* =====================================================================
+       SA PUBLIC HOLIDAYS (Public Holidays Act 36 of 1994)
+       ===================================================================== */
+    const FIXED_HOLIDAYS = [
+      { month: 1,  day: 1,  name: "New Year's Day" },
+      { month: 3,  day: 21, name: 'Human Rights Day' },
+      { month: 4,  day: 27, name: 'Freedom Day' },
+      { month: 5,  day: 1,  name: "Workers' Day" },
+      { month: 6,  day: 16, name: 'Youth Day' },
+      { month: 8,  day: 9,  name: "National Women's Day" },
+      { month: 9,  day: 24, name: 'Heritage Day' },
+      { month: 12, day: 16, name: 'Day of Reconciliation' },
+      { month: 12, day: 25, name: 'Christmas Day' },
+      { month: 12, day: 26, name: 'Day of Goodwill' },
+    ];
+
+    function easterSunday(year) {
+      const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+      const d = Math.floor(b / 4), e = b % 4;
+      const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+      const h = (19 * a + b - d - g + 15) % 30;
+      const i = Math.floor(c / 4), k = c % 4;
+      const l = (32 + 2 * e + 2 * i - h - k) % 7;
+      const m = Math.floor((a + 11 * h + 22 * l) / 451);
+      const month = Math.floor((h + l - 7 * m + 114) / 31);
+      const day = ((h + l - 7 * m + 114) % 31) + 1;
+      return new Date(Date.UTC(year, month - 1, day));
     }
 
-    // Task Processing Engine
-    taskForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        const newTask = {
-            id: Date.now(),
-            title: document.getElementById('taskTitle').value,
-            time: document.getElementById('taskTime').value,
-            priority: document.getElementById('taskPriority').value,
-            completed: false
+    const addDays = (d, n) => { const x = new Date(d); x.setUTCDate(x.getUTCDate() + n); return x; };
+    const ymd = (y, m, d) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+    function buildHolidayMap(year) {
+      const map = new Map();
+      for (const h of FIXED_HOLIDAYS) map.set(ymd(year, h.month, h.day), h.name);
+      const easter = easterSunday(year);
+      const gf = addDays(easter, -2);
+      const fd = addDays(easter, 1);
+      map.set(ymd(gf.getUTCFullYear(), gf.getUTCMonth() + 1, gf.getUTCDate()), 'Good Friday');
+      map.set(ymd(fd.getUTCFullYear(), fd.getUTCMonth() + 1, fd.getUTCDate()), 'Family Day');
+
+      // Sunday-substitution rule: if a public holiday falls on Sunday, Monday is a public holiday
+      const extra = new Map();
+      for (const [key, name] of map) {
+        const [y, m, d] = key.split('-').map(Number);
+        const date = new Date(Date.UTC(y, m - 1, d));
+        if (date.getUTCDay() === 0) {
+          const mon = addDays(date, 1);
+          const monKey = ymd(mon.getUTCFullYear(), mon.getUTCMonth() + 1, mon.getUTCDate());
+          if (!map.has(monKey)) extra.set(monKey, `${name} (Observed)`);
+        }
+      }
+      for (const [k, v] of extra) map.set(k, v);
+      return map;
+    }
+
+    const _holidayCache = new Map();
+    function getHolidayMap(year) {
+      if (!_holidayCache.has(year)) _holidayCache.set(year, buildHolidayMap(year));
+      return _holidayCache.get(year);
+    }
+    function isPublicHoliday(sastDateString) {
+      return getHolidayMap(Number(sastDateString.slice(0, 4))).has(sastDateString);
+    }
+    function holidayName(sastDateString) {
+      return getHolidayMap(Number(sastDateString.slice(0, 4))).get(sastDateString) || null;
+    }
+
+    /* =====================================================================
+       SAST HELPERS
+       ===================================================================== */
+    function toSAST(date) {
+      const sast = new Date(date.getTime() + SAST_OFFSET_MIN * 60000);
+      return {
+        dateStr: sast.toISOString().slice(0, 10),
+        minutes: sast.getUTCHours() * 60 + sast.getUTCMinutes(),
+        weekday: sast.getUTCDay(),
+        sast,
+      };
+    }
+
+    function sastDayStart(date) {
+      const [y, m, d] = toSAST(date).dateStr.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, d) - SAST_OFFSET_MIN * 60000);
+    }
+
+    const diffMinutes = (a, b) => Math.max(0, Math.round((b.getTime() - a.getTime()) / 60000));
+    const minD = (a, b) => (a < b ? a : b);
+    const maxD = (a, b) => (a > b ? a : b);
+
+    function clipToRange(start, end, rangeStart, rangeEnd) {
+      const s = maxD(start, rangeStart);
+      const e = minD(end, rangeEnd);
+      return e > s ? [s, e] : null;
+    }
+
+    /* =====================================================================
+       CLASSIFICATION: split [start, end] into REGULAR / OVERTIME segments
+       ===================================================================== */
+    function classifyInterval(start, end) {
+      const segments = [];
+      if (end <= start) return segments;
+
+      let cursor = new Date(start);
+      while (cursor < end) {
+        const { dateStr, weekday } = toSAST(cursor);
+        const holiday = isPublicHoliday(dateStr);
+        const dayStart = sastDayStart(cursor);
+        const dayEnd = new Date(dayStart.getTime() + 24 * 3600 * 1000);
+
+        const segStart = maxD(cursor, dayStart);
+        const segEnd = minD(end, dayEnd);
+
+        if (segEnd > segStart) {
+          const isWeekend = weekday === 0 || weekday === 6;
+          if (holiday || isWeekend) {
+            segments.push({ kind: 'OVERTIME', minutes: diffMinutes(segStart, segEnd) });
+          } else {
+            const regStart = new Date(dayStart.getTime() + REG_START_MIN * 60000);
+            const regEnd = new Date(dayStart.getTime() + REG_END_MIN * 60000);
+
+            const beforeEnd = minD(segEnd, regStart);
+            if (beforeEnd > segStart) {
+              segments.push({ kind: 'OVERTIME', minutes: diffMinutes(segStart, beforeEnd) });
+            }
+            const rStart = maxD(segStart, regStart);
+            const rEnd = minD(segEnd, regEnd);
+            if (rEnd > rStart) {
+              segments.push({ kind: 'REGULAR', minutes: diffMinutes(rStart, rEnd) });
+            }
+            const afterStart = maxD(segStart, regEnd);
+            if (segEnd > afterStart) {
+              segments.push({ kind: 'OVERTIME', minutes: diffMinutes(afterStart, segEnd) });
+            }
+          }
+        }
+        cursor = dayEnd;
+      }
+
+      const merged = [];
+      for (const s of segments) {
+        if (s.minutes <= 0) continue;
+        const last = merged[merged.length - 1];
+        if (last && last.kind === s.kind) last.minutes += s.minutes;
+        else merged.push({ ...s });
+      }
+      return merged;
+    }
+
+    /* =====================================================================
+       BREAK RULE: 30 min deducted for every 5 h worked; gaps < 30 min = continuous
+       ===================================================================== */
+    function computeBreakDeduction(intervals) {
+      const sorted = intervals
+        .filter((x) => x.end > x.start)
+        .sort((a, b) => a.start - b.start);
+
+      if (sorted.length === 0) return 0;
+
+      const blocks = [];
+      let current = [sorted[0]];
+      for (let i = 1; i < sorted.length; i++) {
+        const gapMin = (sorted[i].start - sorted[i - 1].end) / 60000;
+        if (gapMin < CONTINUITY_GAP_MIN) current.push(sorted[i]);
+        else { blocks.push(current); current = [sorted[i]]; }
+      }
+      blocks.push(current);
+
+      let breakMinutes = 0;
+      for (const block of blocks) {
+        const workedMin = block.reduce((sum, x) => sum + diffMinutes(x.start, x.end), 0);
+        breakMinutes += Math.floor(workedMin / BREAK_THRESHOLD_MIN) * BREAK_DURATION_MIN;
+      }
+      return breakMinutes;
+    }
+
+    /* =====================================================================
+       INDEXEDDB STORAGE
+       ===================================================================== */
+    let _db = null;
+    function openDB() {
+      if (_db) return Promise.resolve(_db);
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (ev) => {
+          const db = ev.target.result;
+          if (!db.objectStoreNames.contains(STORE)) {
+            const store = db.createObjectStore(STORE, { keyPath: 'id' });
+            store.createIndex('byStart', 'startTime');
+            store.createIndex('byStatus', 'status');
+          }
         };
-
-        tasks.push(newTask);
-        saveTasks();
-        taskForm.reset();
-        
-        // Request notification permission for future alerts if supported
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-    });
-
-    function toggleTask(id) {
-        tasks = tasks.map(task => task.id === id ? { ...task, completed: !task.completed } : task);
-        saveTasks();
+        req.onsuccess = () => { _db = req.result; resolve(_db); };
+        req.onerror = () => reject(req.error);
+      });
     }
 
-    function deleteTask(id) {
-        tasks = tasks.filter(task => task.id !== id);
-        saveTasks();
+    async function tx(mode) {
+      const db = await openDB();
+      return db.transaction(STORE, mode).objectStore(STORE);
     }
 
-    // UI Rendering Logic
-    function renderTasks() {
-        taskList.innerHTML = '';
-        
-        // Sort tasks: high priority first, completed items pushed to the bottom
-        const sortedTasks = [...tasks].sort((a, b) => {
-            if (a.completed !== b.completed) return a.completed - b.completed;
-            const priorityWeight = { high: 3, medium: 2, low: 1 };
-            return priorityWeight[b.priority] - priorityWeight[a.priority];
-        });
+    async function putEntry(entry) {
+      const store = await tx('readwrite');
+      return new Promise((res, rej) => {
+        const r = store.put(entry);
+        r.onsuccess = () => res(entry);
+        r.onerror = () => rej(r.error);
+      });
+    }
 
-        if (sortedTasks.length === 0) {
-            taskList.innerHTML = `<li style="text-align:center; color:var(--text-muted); padding:20px;">No tasks captured. Setup your morning list!</li>`;
+    async function deleteEntry(id) {
+      const store = await tx('readwrite');
+      return new Promise((res, rej) => {
+        const r = store.delete(id);
+        r.onsuccess = () => res();
+        r.onerror = () => rej(r.error);
+      });
+    }
+
+    async function getAllEntries() {
+      const store = await tx('readonly');
+      return new Promise((res, rej) => {
+        const r = store.getAll();
+        r.onsuccess = () => res(r.result || []);
+        r.onerror = () => rej(r.error);
+      });
+    }
+
+    function uuid() {
+      if (crypto && crypto.randomUUID) return crypto.randomUUID();
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+      });
+    }
+
+    /* =====================================================================
+       FORMAT HELPERS
+       ===================================================================== */
+    const pad = (n) => String(n).padStart(2, '0');
+    function fmtHM(minutes) {
+      const m = Math.max(0, Math.round(minutes));
+      return `${Math.floor(m / 60)}h ${pad(m % 60)}m`;
+    }
+    function fmtElapsed(ms) {
+      const total = Math.max(0, Math.floor(ms / 1000));
+      return `${pad(Math.floor(total / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`;
+    }
+    function fmtTimeSAST(date) {
+      const s = toSAST(date).sast;
+      return `${pad(s.getUTCHours())}:${pad(s.getUTCMinutes())}`;
+    }
+
+    /* =====================================================================
+       UI STATE & ELEMENTS
+       ===================================================================== */
+    const els = {
+      clock: document.getElementById('live-clock'),
+      date: document.getElementById('live-date'),
+      shiftHint: document.getElementById('shift-hint'),
+      noteInput: document.getElementById('entry-note-input'),
+      btnWork: document.getElementById('btn-work'),
+      btnTravel: document.getElementById('btn-travel'),
+      runningCard: document.getElementById('running-card'),
+      runningType: document.getElementById('running-type'),
+      runningTimer: document.getElementById('running-timer'),
+      runningNote: document.getElementById('running-note'),
+      travelProgressWrap: document.getElementById('travel-progress-wrap'),
+      travelProgressBar: document.getElementById('travel-progress-bar'),
+      btnStop: document.getElementById('btn-stop'),
+      btnExport: document.getElementById('btn-export'),
+      sumRegular: document.getElementById('sum-regular'),
+      sumOvertime: document.getElementById('sum-overtime'),
+      sumTravel: document.getElementById('sum-travel'),
+      sumBreaks: document.getElementById('sum-breaks'),
+      sumNet: document.getElementById('sum-net'),
+      entriesList: document.getElementById('entries-list'),
+      holidayBanner: document.getElementById('holiday-banner'),
+      netStatus: document.getElementById('net-status'),
+      tabToday: document.getElementById('tab-today'),
+      tabAll: document.getElementById('tab-all'),
+    };
+
+    let running = null;
+    let tickHandle = null;
+    let currentFilter = 'today';
+
+    /* =====================================================================
+       LIVE CLOCK & HOLIDAY STATUS
+       ===================================================================== */
+    function tickClock() {
+      const now = new Date();
+      const { sast, dateStr, weekday } = toSAST(now);
+      els.clock.textContent = `${pad(sast.getUTCHours())}:${pad(sast.getUTCMinutes())}:${pad(sast.getUTCSeconds())}`;
+      els.date.textContent = sast.toLocaleDateString('en-ZA', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+      });
+
+      const h = holidayName(dateStr);
+      const isWeekend = weekday === 0 || weekday === 6;
+
+      els.holidayBanner.classList.toggle('hidden', !h);
+      if (h) {
+        els.holidayBanner.textContent = `Public Holiday — ${h}`;
+        els.shiftHint.textContent = 'All hours today classify as Overtime';
+      } else if (isWeekend) {
+        els.shiftHint.textContent = 'Weekend — All hours classify as Overtime';
+      } else {
+        els.shiftHint.textContent = 'Regular hours: Mon–Fri 07:30–16:00 SAST';
+      }
+    }
+
+    /* =====================================================================
+       RUNNING TIMER
+       ===================================================================== */
+    function startTicker() {
+      stopTicker();
+      tickHandle = setInterval(async () => {
+        if (!running) return;
+        const elapsed = Date.now() - new Date(running.startTime).getTime();
+
+        if (running.type === 'TRAVEL') {
+          const cappedElapsed = Math.min(elapsed, TRAVEL_MAX_MS);
+          els.runningTimer.textContent = fmtElapsed(cappedElapsed);
+          const pct = Math.min(100, (elapsed / TRAVEL_MAX_MS) * 100);
+          els.travelProgressBar.style.width = `${pct}%`;
+
+          if (elapsed >= TRAVEL_MAX_MS) {
+            await stopRunning(true);
             return;
+          }
+          const remSec = Math.ceil((TRAVEL_MAX_MS - elapsed) / 1000);
+          const remMin = Math.floor(remSec / 60);
+          const sec = remSec % 60;
+          els.runningNote.textContent = `Auto-stops in ${remMin}m ${pad(sec)}s (30 min cap)`;
+        } else {
+          els.runningTimer.textContent = fmtElapsed(elapsed);
+          const memo = running.note ? `Note: ${running.note} · ` : '';
+          els.runningNote.textContent = `${memo}30 min break applies after 5h continuous work`;
+        }
+      }, 250);
+    }
+
+    function stopTicker() {
+      if (tickHandle) clearInterval(tickHandle);
+      tickHandle = null;
+    }
+
+    /* =====================================================================
+       START / STOP / NOTE SYNC
+       ===================================================================== */
+    async function start(type) {
+      if (running) return;
+      const noteText = els.noteInput.value.trim();
+      const entry = {
+        id: uuid(),
+        type,
+        note: noteText,
+        startTime: new Date().toISOString(),
+        endTime: null,
+        status: 'RUNNING',
+      };
+      await putEntry(entry);
+      running = entry;
+      renderRunning();
+      startTicker();
+      updateButtons();
+      await renderAll();
+    }
+
+    async function stopRunning(auto) {
+      if (!running) return;
+      let end = new Date();
+      if (running.type === 'TRAVEL') {
+        const cap = new Date(running.startTime).getTime() + TRAVEL_MAX_MS;
+        if (end.getTime() > cap) end = new Date(cap);
+      }
+      // Capture any note typed while session was running
+      const latestNote = els.noteInput.value.trim();
+      if (latestNote) running.note = latestNote;
+
+      running.endTime = end.toISOString();
+      running.status = auto ? 'AUTO_STOPPED' : 'STOPPED';
+      await putEntry(running);
+
+      running = null;
+      els.noteInput.value = '';
+      stopTicker();
+      renderRunning();
+      updateButtons();
+      await renderAll();
+    }
+
+    /* =====================================================================
+       RENDER UI
+       ===================================================================== */
+    function renderRunning() {
+      if (!running) {
+        els.runningCard.classList.add('hidden');
+        els.travelProgressWrap.classList.add('hidden');
+        return;
+      }
+      const isTravel = running.type === 'TRAVEL';
+      els.runningCard.classList.remove('hidden');
+      els.runningCard.classList.toggle('is-work', !isTravel);
+      els.runningCard.classList.toggle('is-travel', isTravel);
+      els.travelProgressWrap.classList.toggle('hidden', !isTravel);
+      els.runningType.textContent = isTravel ? 'Travel Session' : 'Work Session';
+      els.runningTimer.textContent = fmtElapsed(Date.now() - new Date(running.startTime).getTime());
+    }
+
+    function updateButtons() {
+      els.btnWork.disabled = !!running;
+      els.btnTravel.disabled = !!running;
+      els.btnWork.textContent = running && running.type === 'WORK' ? 'Working…' : '▶ Start Work';
+      els.btnTravel.textContent = running && running.type === 'TRAVEL' ? 'Travelling…' : '🚗 Start Travel';
+    }
+
+    async function renderAll() {
+      const all = await getAllEntries();
+      const now = new Date();
+      const todayStart = sastDayStart(now);
+      const tomorrowStart = new Date(todayStart.getTime() + 24 * 3600 * 1000);
+      const todayStr = toSAST(now).dateStr;
+
+      let regular = 0, overtime = 0, travel = 0;
+      const todaysWorkIntervals = [];
+      const display = [];
+
+      for (const e of all) {
+        const startD = new Date(e.startTime);
+        let endD = e.endTime ? new Date(e.endTime) : now;
+
+        if (e.type === 'TRAVEL') {
+          const capEnd = new Date(startD.getTime() + TRAVEL_MAX_MS);
+          if (endD > capEnd) endD = capEnd;
+          const totalTravelMin = Math.min(TRAVEL_MAX_MIN, diffMinutes(startD, endD));
+          display.push({ entry: e, segments: [], travelMinutes: totalTravelMin });
+
+          // Clip travel strictly to today's SAST window
+          const todayClip = clipToRange(startD, endD, todayStart, tomorrowStart);
+          if (todayClip) {
+            travel += Math.min(TRAVEL_MAX_MIN, diffMinutes(todayClip[0], todayClip[1]));
+          }
+          continue;
         }
 
-        sortedTasks.forEach(task => {
-            const li = document.createElement('li');
-            li.className = `task-item priority-${task.priority} ${task.completed ? 'completed' : ''}`;
-            
-            li.innerHTML = `
-                <div class="task-details">
-                    <h4>${escapeHTML(task.title)}</h4>
-                    <p>${task.time ? `⏰ Scheduled: ${task.time}` : '📥 Backlog / Flexible'}</p>
-                </div>
-                <div class="task-actions">
-                    <input type="checkbox" class="checkbox-btn" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
-                    <button class="delete-btn" onclick="deleteTask(${task.id})" title="Delete Task">🗑️</button>
-                </div>
-            `;
-            taskList.appendChild(li);
+        // Full entry segments for list display
+        const fullSegs = classifyInterval(startD, endD);
+        display.push({ entry: e, segments: fullSegs, travelMinutes: 0 });
+
+        // Clip work interval strictly to today's SAST window for accurate daily summary
+        const todayClip = clipToRange(startD, endD, todayStart, tomorrowStart);
+        if (todayClip) {
+          const todaySegs = classifyInterval(todayClip[0], todayClip[1]);
+          for (const s of todaySegs) {
+            if (s.kind === 'REGULAR') regular += s.minutes;
+            else overtime += s.minutes;
+          }
+          if (e.endTime) {
+            todaysWorkIntervals.push({ start: todayClip[0], end: todayClip[1] });
+          }
+        }
+      }
+
+      const breakMinutes = computeBreakDeduction(todaysWorkIntervals);
+      const net = Math.max(0, regular + overtime - breakMinutes);
+
+      els.sumRegular.textContent = fmtHM(regular);
+      els.sumOvertime.textContent = fmtHM(overtime);
+      els.sumTravel.textContent = fmtHM(travel);
+      els.sumBreaks.textContent = fmtHM(breakMinutes);
+      els.sumNet.textContent = fmtHM(net);
+
+      const filteredDisplay = currentFilter === 'today'
+        ? display.filter((item) => {
+            const s = new Date(item.entry.startTime);
+            const e = item.entry.endTime ? new Date(item.entry.endTime) : now;
+            return toSAST(s).dateStr === todayStr || toSAST(e).dateStr === todayStr || item.entry.status === 'RUNNING';
+          })
+        : display;
+
+      renderEntries(filteredDisplay);
+    }
+
+    function renderEntries(list) {
+      els.entriesList.innerHTML = '';
+      if (list.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'empty-state';
+        li.textContent = currentFilter === 'today'
+          ? 'No entries logged today. Press Start Work or Start Travel.'
+          : 'No time logs recorded yet.';
+        els.entriesList.appendChild(li);
+        return;
+      }
+
+      list.sort((a, b) => new Date(b.entry.startTime) - new Date(a.entry.startTime));
+
+      for (const { entry, segments, travelMinutes } of list) {
+        const isTravel = entry.type === 'TRAVEL';
+        const isOvertimeOnly = !isTravel && segments.length > 0 && segments.every((s) => s.kind === 'OVERTIME');
+        const li = document.createElement('li');
+        li.className = `entry ${isTravel ? 'travel' : 'work'} ${isOvertimeOnly ? 'overtime' : ''}`;
+
+        const startD = new Date(entry.startTime);
+        const endD = entry.endTime ? new Date(entry.endTime) : null;
+        const datePrefix = currentFilter === 'all' ? `${toSAST(startD).dateStr} · ` : '';
+
+        const body = document.createElement('div');
+        body.className = 'entry-body';
+
+        const title = document.createElement('div');
+        title.className = 'entry-main';
+        title.textContent = `${datePrefix}${isTravel ? 'Travel' : 'Work'} · ${fmtTimeSAST(startD)}–${endD ? fmtTimeSAST(endD) : 'Now'}`;
+
+        const sub = document.createElement('div');
+        sub.className = 'entry-sub';
+        if (isTravel) {
+          sub.textContent = `${fmtHM(travelMinutes)}${entry.status === 'AUTO_STOPPED' ? ' · auto-stopped at 30m cap' : ''}`;
+        } else {
+          const reg = segments.filter((s) => s.kind === 'REGULAR').reduce((a, s) => a + s.minutes, 0);
+          const ot  = segments.filter((s) => s.kind === 'OVERTIME').reduce((a, s) => a + s.minutes, 0);
+          sub.textContent = `Regular ${fmtHM(reg)} · Overtime ${fmtHM(ot)}`;
+        }
+        body.append(title, sub);
+
+        if (entry.note) {
+          const memo = document.createElement('div');
+          memo.className = 'entry-memo';
+          memo.textContent = `📝 ${entry.note}`;
+          body.appendChild(memo);
+        }
+
+        const right = document.createElement('div');
+        right.className = 'entry-right';
+
+        const badge = document.createElement('span');
+        badge.className = 'entry-badge';
+        if (entry.status === 'RUNNING') {
+          badge.textContent = 'LIVE';
+          badge.classList.add('run');
+        } else if (entry.status === 'AUTO_STOPPED') {
+          badge.textContent = 'AUTO';
+        } else if (isTravel) {
+          badge.textContent = 'TRAVEL';
+        } else if (isOvertimeOnly) {
+          badge.textContent = 'OT';
+          badge.classList.add('ot');
+        } else {
+          badge.textContent = 'WORK';
+        }
+
+        right.appendChild(badge);
+
+        if (entry.status !== 'RUNNING') {
+          const delBtn = document.createElement('button');
+          delBtn.className = 'btn-del';
+          delBtn.title = 'Delete entry';
+          delBtn.setAttribute('aria-label', 'Delete entry');
+          delBtn.textContent = '✕';
+          delBtn.addEventListener('click', async () => {
+            if (confirm('Delete this time entry?')) {
+              await deleteEntry(entry.id);
+              await renderAll();
+            }
+          });
+          right.appendChild(delBtn);
+        }
+
+        li.append(body, right);
+        els.entriesList.appendChild(li);
+      }
+    }
+
+    /* =====================================================================
+       CSV EXPORT
+       ===================================================================== */
+    async function exportCSV() {
+      const all = await getAllEntries();
+      if (all.length === 0) {
+        alert('No entries to export yet.');
+        return;
+      }
+      all.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+
+      const rows = [
+        ['Date (SAST)', 'Type', 'Start (SAST)', 'End (SAST)', 'Status', 'Regular (min)', 'Overtime (min)', 'Travel (min)', 'Note']
+      ];
+
+      for (const e of all) {
+        const startD = new Date(e.startTime);
+        let endD = e.endTime ? new Date(e.endTime) : new Date();
+        if (e.type === 'TRAVEL') {
+          const cap = new Date(startD.getTime() + TRAVEL_MAX_MS);
+          if (endD > cap) endD = cap;
+        }
+        const dateStr = toSAST(startD).dateStr;
+        const startStr = fmtTimeSAST(startD);
+        const endStr = e.endTime ? fmtTimeSAST(endD) : 'RUNNING';
+
+        let reg = 0, ot = 0, trav = 0;
+        if (e.type === 'TRAVEL') {
+          trav = Math.min(TRAVEL_MAX_MIN, diffMinutes(startD, endD));
+        } else {
+          const segs = classifyInterval(startD, endD);
+          reg = segs.filter((s) => s.kind === 'REGULAR').reduce((a, s) => a + s.minutes, 0);
+          ot = segs.filter((s) => s.kind === 'OVERTIME').reduce((a, s) => a + s.minutes, 0);
+        }
+
+        const safeNote = `"${(e.note || '').replace(/"/g, '""')}"`;
+        rows.push([dateStr, e.type, startStr, endStr, e.status, reg, ot, trav, safeNote]);
+      }
+
+      const csvContent = rows.map((r) => r.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `FlexiTime_Export_${toSAST(new Date()).dateStr}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    /* =====================================================================
+       ONLINE / OFFLINE & PWA MANIFEST
+       ===================================================================== */
+    function setOnline(isOnline) {
+      els.netStatus.textContent = isOnline ? 'Online' : 'Offline';
+      els.netStatus.classList.toggle('offline', !isOnline);
+    }
+
+    function makeIconDataUrl(size) {
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#0ea5e9';
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `${Math.floor(size * 0.58)}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⏱', size / 2, size / 2 + size * 0.04);
+      return c.toDataURL('image/png');
+    }
+
+    function installManifest() {
+      try {
+        const icon192 = makeIconDataUrl(192);
+        const icon512 = makeIconDataUrl(512);
+        const manifest = {
+          name: 'FlexiTime — SA Time Capture',
+          short_name: 'FlexiTime',
+          description: 'Capture regular, overtime and travel time with SA public holiday awareness.',
+          start_url: '.',
+          scope: '.',
+          display: 'standalone',
+          orientation: 'portrait',
+          background_color: '#0f172a',
+          theme_color: '#0f172a',
+          lang: 'en-ZA',
+          icons: [
+            { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          ],
+        };
+        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        document.getElementById('manifest-link').href = URL.createObjectURL(blob);
+        document.getElementById('apple-icon').href = icon192;
+      } catch (e) { /* ignore */ }
+    }
+
+    /* =====================================================================
+       BOOT
+       ===================================================================== */
+    async function boot() {
+      installManifest();
+      tickClock();
+      setInterval(tickClock, 1000);
+
+      els.btnWork.addEventListener('click', () => start('WORK'));
+      els.btnTravel.addEventListener('click', () => start('TRAVEL'));
+      els.btnStop.addEventListener('click', () => stopRunning(false));
+      els.btnExport.addEventListener('click', exportCSV);
+
+      [els.tabToday, els.tabAll].forEach((btn) => {
+        btn.addEventListener('click', () => {
+          currentFilter = btn.dataset.filter;
+          els.tabToday.classList.toggle('active', currentFilter === 'today');
+          els.tabAll.classList.toggle('active', currentFilter === 'all');
+          renderAll();
         });
-    }
+      });
 
-    function escapeHTML(str) {
-        return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
-    }
+      window.addEventListener('online', () => setOnline(true));
+      window.addEventListener('offline', () => setOnline(false));
+      setOnline(navigator.onLine);
 
-    // PWA Installation Context Handler
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        installBtn.style.display = 'block';
-    });
-
-    installBtn.addEventListener('click', async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-            installBtn.style.display = 'none';
+      // Restore active session cleanly before first render
+      const all = await getAllEntries();
+      const active = all.find((e) => e.status === 'RUNNING');
+      if (active) {
+        running = active;
+        if (running.note) els.noteInput.value = running.note;
+        if (running.type === 'TRAVEL') {
+          const elapsed = Date.now() - new Date(running.startTime).getTime();
+          if (elapsed >= TRAVEL_MAX_MS) {
+            await stopRunning(true);
+          } else {
+            renderRunning();
+            startTicker();
+            updateButtons();
+          }
+        } else {
+          renderRunning();
+          startTicker();
+          updateButtons();
         }
-        deferredPrompt = null;
-    });
+      } else {
+        // Support manifest shortcut query parameters if idle
+        const action = new URLSearchParams(location.search).get('action');
+        if (action === 'start-work') await start('WORK');
+        if (action === 'start-travel') await start('TRAVEL');
+      }
 
-    // Native Inline Service Worker for Offline Execution Architecture
-    if ('serviceWorker' in navigator) {
-        const swBlob = new Blob([`
-            const CACHE_NAME = 'workflow-v1';
-            self.addEventListener('install', e => self.skipWaiting());
-            self.addEventListener('activate', e => e.waitUntil(clients.claim()));
-            self.addEventListener('fetch', e => {
-                // Network first falling back to offline asset simulation
-                e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-            });
-        `], { type: 'application/javascript' });
-        
-        const swUrl = URL.createObjectURL(swBlob);
-        navigator.serviceWorker.register(swUrl).catch(err => console.log('SW Setup Ignored locally:', err));
+      await renderAll();
+
+      // Re-calculate summaries every 30s so running shifts update live totals
+      setInterval(renderAll, 30 * 1000);
     }
 
-    // Initial Execution
-    renderTasks();
-</script>
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+  })();
+  </script>
 </body>
 </html>
